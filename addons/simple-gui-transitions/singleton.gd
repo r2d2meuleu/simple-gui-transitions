@@ -38,7 +38,7 @@ func hide(id := "", function: Callable = _default_callable):
 	_for_each_layout("_hide", [id, _function])
 
 
-## Returns if layout with the given id is visible.
+## Returns if layout with the given id is currently visible.
 func is_shown(id: String) -> bool:
 	if not _layouts.has(id):
 		push_error("Layout with given id does not exist: " + str(id))
@@ -51,7 +51,7 @@ func is_shown(id: String) -> bool:
 	return true
 
 
-## Returns if layout with the given id is hidden.
+## Returns if layout with the given id is currently hidden.
 func is_hidden(id: String) -> bool:
 	if not _layouts.has(id):
 		push_error("Layout with given id does not exist: " + str(id))
@@ -64,7 +64,7 @@ func is_hidden(id: String) -> bool:
 	return true
 
 
-## Returns if any layout or one with the given id is transitioning.
+## Returns if any layout or one with the given id is currently transitioning.
 func in_transition(id := "") -> bool:
 	var transition_states := [1, 2]
 
