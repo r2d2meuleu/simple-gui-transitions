@@ -469,7 +469,7 @@ func _show(id := ""):
 		_status = Status.OK
 
 		if GuiTransitions.is_shown(layout_id):
-			GuiTransitions.emit_signal("show_completed")
+			GuiTransitions.show_completed.emit()
 
 
 ## Handles the singleton hide calls.
@@ -498,7 +498,7 @@ func _hide(id := "", function = null):
 		_status = Status.OK
 
 		if GuiTransitions.is_hidden(layout_id):
-			GuiTransitions.emit_signal("hide_completed")
+			GuiTransitions.hide_completed.emit()
 
 
 # Abstraction methods
