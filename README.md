@@ -96,21 +96,23 @@ The signal `show_completed` is emited after a layout has been shown.
 The signal `hide_completed` is emited after a layout has been hidden.
 
 ### Public Methods
-#### go_to(id: String, function: Callable)
+**Note**: Optional arguments in the methods below are suffixed with `?` (e.g. `function?`).
+
+#### go_to(id: String, function?: Callable)
 The method `go_to` hides the current layout and shows the layout with the given `id`.
 If `function` (optional) is passed in, the `function` will be executed halfway through.
 Both signals `hide_completed` and `show_completed` are emited accordingly.
 
-#### update(function: Callable)
+#### update(function?: Callable)
 The method `update` hides and shows the current layout.
 If `function` (optional) is passed in, the `function` will be executed halfway through.
 Both signals `hide_completed` and `show_completed` are emited accordingly.
 
-#### show(id: String)
-The method `show` shows the layout with the given `id`.
+#### show(id?: String)
+The method `show` shows the layout with the given `id`, or all hidden layouts if no `id` is passed in.
 Emits the signal `show_completed` on completion.
 
-#### hide(id: String)
+#### hide(id?: String, function?: Callable)
 The method `hide` hides the layout with the given `id`, or all visible layouts if no `id` is passed in.
 Emits the signal `hide_completed` on completion.
 
@@ -119,3 +121,6 @@ The method `is_shown` returns if the layout with the given `id` is currently vis
 
 #### is_hidden(id: String)
 The method `is_hidden` returns if the layout with the given `id` is currently hidden.
+
+#### in_transition(id?: String)
+The method `in_transition` returns if any layout or one with the given `id` is currently transitioning.

@@ -27,9 +27,9 @@ enum Anim {
 
 ## Current transition status.
 enum Status {
-	OK,  ## No transition being performed.
-	SHOWING,  ## Performing enter transition.
-	HIDING,  ## Performing leave transition.
+	OK = 0,  ## No transition being performed.
+	SHOWING = 1,  ## Performing enter transition.
+	HIDING = 2,  ## Performing leave transition.
 }
 
 ## Boolean value used by transition properties.
