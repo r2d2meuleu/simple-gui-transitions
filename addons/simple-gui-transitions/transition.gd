@@ -189,6 +189,7 @@ const DEBUG := false
 ## controls intertwine animations, giving a smoother effect.
 @export_range(-0.01, 1.0, 0.01) var delay := -0.01
 
+## Transition curve of the animations. Same as [code]Tween.TransitionType[/code].
 @export_enum(
 	"Default",
 	"LINEAR",
@@ -202,16 +203,15 @@ const DEBUG := false
 	"CIRC",
 	"BOUNCE",
 	"BACK"
-## Transition curve of the animations. Same as [code]Tween.TransitionType[/code].
 ) var transition_type := "Default"
 
+## Ease curve of the animations. Same as [code]Tween.EaseType[/code].
 @export_enum(
 	"Default",
 	"IN",
 	"OUT",
 	"IN_OUT",
 	"OUT_IN"
-## Ease curve of the animations. Same as [code]Tween.EaseType[/code].
 ) var ease_type := "Default"
 
 @export_group("Target")
