@@ -52,10 +52,13 @@ class NodeInfo extends RefCounted:
 	var initial_position: Vector2
 	var initial_scale: Vector2
 	var initial_mouse_filter: int
+	var initial_anchor_h: Vector2
+	var initial_anchor_v: Vector2
 	var delay: float
 	var duration: float
 	var center_pivot: bool
 	var tween: Tween
+	var layout_only: bool
 
 	func _init(
 		_node: Control,
@@ -64,7 +67,8 @@ class NodeInfo extends RefCounted:
 		_animation_enter: int,
 		_animation_leave: int,
 		_auto_start: bool,
-		_center_pivot: bool
+		_center_pivot: bool,
+		_layout_only: bool
 	) -> void:
 		node = _node
 		name = node.name
@@ -74,6 +78,10 @@ class NodeInfo extends RefCounted:
 		delay = _delay
 		duration = _duration
 		center_pivot = _center_pivot
+		layout_only = _layout_only
+
+		initial_anchor_h = Vector2(node.anchor_left, node.anchor_right)
+		initial_anchor_v = Vector2(node.anchor_top, node.anchor_bottom)
 
 		var shader_animations := [
 			Anim.SLIDE_LEFT,
@@ -82,7 +90,7 @@ class NodeInfo extends RefCounted:
 			Anim.SLIDE_DOWN
 		]
 
-		if _animation_enter in shader_animations or _animation_leave in shader_animations:
+		if not _layout_only and (_animation_enter in shader_animations or _animation_leave in shader_animations):
 			node.material = MaterialTransform.duplicate()
 
 		if _auto_start:
@@ -131,6 +139,35 @@ class NodeInfo extends RefCounted:
 				offset.y = -view_size.y * 2.0
 			Anim.SLIDE_DOWN:
 				offset.y = view_size.y * 2.0
+
+		return offset
+
+	# Reset node scale to initial values.
+	func reset_scale() -> void:
+		node.scale = initial_scale
+
+	# Reset node anchors to initial values.
+	func reset_anchors(direction: String) -> void:
+		if direction in ["both", "h"]:
+			node.anchor_left = initial_anchor_h.x
+			node.anchor_right = initial_anchor_h.y
+		if direction in ["both", "v"]:
+			node.anchor_top = initial_anchor_v.x
+			node.anchor_bottom = initial_anchor_v.y
+
+	# Get the out-of-screen anchor factor of node according to the animation type.
+	func get_target_anchor(animation: int) -> Vector2:
+		var offset := Vector2.ZERO
+
+		match animation:
+			Anim.SLIDE_LEFT:
+				offset = Vector2(initial_anchor_h.x - 1.0, initial_anchor_h.y - 1.0)
+			Anim.SLIDE_RIGHT:
+				offset = Vector2(initial_anchor_h.x + 1.0, initial_anchor_h.y + 1.0)
+			Anim.SLIDE_UP:
+				offset = Vector2(initial_anchor_v.x - 1.0, initial_anchor_v.y - 1.0)
+			Anim.SLIDE_DOWN:
+				offset = Vector2(initial_anchor_v.x + 1.0, initial_anchor_v.y + 1.0)
 
 		return offset
 
@@ -218,6 +255,8 @@ const DEBUG := false
 
 ## The main layout node. It will be hidden and shown accordingly.
 ## Should be the topmost node of the current layout.
+## If your don't set [code]Controls[/code] or [code]Group[/code],
+## the [code]Layout[/code] itself will be animated.
 ## [b][color=red]Required![/color][/b]
 @export var layout: NodePath
 
@@ -261,6 +300,9 @@ var _is_shown := false
 
 ## Parsed transition status enum value.
 var _status: int = Status.OK
+
+## If apply transitions only to layout (no group or controls set).
+var _layout_only := false
 
 ## Main control affected by this transition.
 @onready var _layout: Control = get_node(layout) if layout else null
@@ -504,34 +546,57 @@ func _hide(id := "", function = null):
 # Abstraction methods
 ## Returns if it's possible to perform transition.
 func _transition_valid() -> bool:
-	var controls_source_valid := bool(controls.size() or _group)
+	if not _layout:
+		push_warning("A valid layout must be set on GuiTransition: %s" % get_path())
+		return false
 
-	if not layout:
-		push_warning("A layout must be set on GuiTransition: %s" % self.get_path())
-
-	if not controls_source_valid:
-		push_warning("A list of controls or a group container must be set on GuiTransition: %s" % self.get_path())
-
-	return controls_source_valid and layout
+	return true
 
 
 ## Performs the slide in transition.
 func _slide_in(node_info: NodeInfo):
 	node_info.init_tween()
+	node_info.reset_scale()
 	_fade_in_node(node_info)
 
 	if node_info.delay:
 		node_info.tween.tween_interval(node_info.delay)
 
-	node_info.tween\
-		.set_trans(_transition)\
-		.set_ease(_ease)\
-		.tween_method(
-			node_info.set_position,
-			node_info.get_target_position(animation_enter),
-			node_info.initial_position,
-			node_info.duration
-		)
+	if _layout_only:
+		var anchor_x := "anchor_left" if animation_enter in [Anim.SLIDE_LEFT, Anim.SLIDE_RIGHT] else "anchor_top"
+		var anchor_y := "anchor_right" if animation_enter in [Anim.SLIDE_LEFT, Anim.SLIDE_RIGHT] else "anchor_bottom"
+		var target_anchor := node_info.get_target_anchor(animation_enter)
+		node_info.node.set(anchor_x, target_anchor.x)
+		node_info.node.set(anchor_y, target_anchor.y)
+		node_info.reset_anchors("v" if animation_enter in [Anim.SLIDE_LEFT, Anim.SLIDE_RIGHT] else "h")
+
+		node_info.tween\
+			.set_trans(_transition)\
+			.set_ease(_ease)\
+			.tween_property(
+				node_info.node,
+				anchor_x, 0.0,
+				node_info.duration
+			)
+		node_info.tween\
+			.parallel()\
+			.set_trans(_transition)\
+			.set_ease(_ease)\
+			.tween_property(
+				node_info.node,
+				anchor_y, 1.0,
+				node_info.duration
+			)
+	else:
+		node_info.tween\
+			.set_trans(_transition)\
+			.set_ease(_ease)\
+			.tween_method(
+				node_info.set_position,
+				node_info.get_target_position(animation_enter),
+				node_info.initial_position,
+				node_info.duration
+			)
 
 	node_info.unset_clickable()
 	await node_info.tween.finished
@@ -541,21 +606,46 @@ func _slide_in(node_info: NodeInfo):
 ## Performs the slide out transition.
 func _slide_out(node_info: NodeInfo):
 	node_info.init_tween()
+	node_info.reset_scale()
 	node_info.node.custom_minimum_size = Vector2(1, 1)
 	node_info.node.custom_minimum_size = Vector2.ZERO
 
 	if node_info.delay:
 		node_info.tween.tween_interval(node_info.delay)
 
-	node_info.tween\
-		.set_trans(_transition)\
-		.set_ease(_ease)\
-		.tween_method(
-			node_info.set_position,
-			node_info.initial_position,
-			node_info.get_target_position(animation_leave),
-			node_info.duration
-		)
+	if _layout_only:
+		var anchor_x := "anchor_left" if animation_leave in [Anim.SLIDE_LEFT, Anim.SLIDE_RIGHT] else "anchor_top"
+		var anchor_y := "anchor_right" if animation_leave in [Anim.SLIDE_LEFT, Anim.SLIDE_RIGHT] else "anchor_bottom"
+		var target_anchor := node_info.get_target_anchor(animation_leave)
+		node_info.reset_anchors("both")
+
+		node_info.tween\
+			.set_trans(_transition)\
+			.set_ease(_ease)\
+			.tween_property(
+				node_info.node,
+				anchor_x, target_anchor.x,
+				node_info.duration
+			)
+		node_info.tween\
+			.parallel()\
+			.set_trans(_transition)\
+			.set_ease(_ease)\
+				.tween_property(
+				node_info.node,
+				anchor_y, target_anchor.y,
+				node_info.duration
+			)
+	else:
+		node_info.tween\
+			.set_trans(_transition)\
+			.set_ease(_ease)\
+			.tween_method(
+				node_info.set_position,
+				node_info.initial_position,
+				node_info.get_target_position(animation_leave),
+				node_info.duration
+			)
 
 	node_info.unset_clickable()
 	await node_info.tween.finished
@@ -566,6 +656,8 @@ func _slide_out(node_info: NodeInfo):
 func _fade_in(node_info: NodeInfo):
 	node_info.init_tween()
 	node_info.set_position(Vector2.ZERO)
+	node_info.reset_anchors("both")
+	node_info.reset_scale()
 	node_info.node.modulate.a = 0.0
 
 	if node_info.delay:
@@ -584,6 +676,8 @@ func _fade_in(node_info: NodeInfo):
 ## Performs the fade out transition.
 func _fade_out(node_info: NodeInfo):
 	node_info.init_tween()
+	node_info.reset_anchors("both")
+	node_info.reset_scale()
 
 	if node_info.delay:
 		node_info.tween.tween_interval(node_info.delay)
@@ -600,6 +694,7 @@ func _fade_out(node_info: NodeInfo):
 func _scale_in(node_info: NodeInfo):
 	node_info.init_tween()
 	node_info.set_position(Vector2.ZERO)
+	node_info.reset_anchors("both")
 
 	node_info.node.modulate.a = 0.0
 	_fade_in_node(node_info)
@@ -624,6 +719,8 @@ func _scale_in(node_info: NodeInfo):
 ## Performs the scale out transition.
 func _scale_out(node_info: NodeInfo):
 	node_info.init_tween()
+	node_info.reset_anchors("both")
+	node_info.reset_scale()
 
 	node_info.tween.tween_callback(node_info.set_pivot_to_center)
 	node_info.tween.tween_callback(node_info.node.set.bind("scale", node_info.initial_scale))
@@ -643,7 +740,7 @@ func _scale_out(node_info: NodeInfo):
 
 ## Gradually fade in the whole layout along with individual transitions.
 func _fade_in_layout() -> void:
-	if not fade_layout:
+	if not fade_layout or _layout_only and animation_enter == Anim.FADE:
 		_tween.tween_interval(duration)
 		return
 
@@ -652,7 +749,7 @@ func _fade_in_layout() -> void:
 
 ## Gradually fade out the whole layout along with individual transitions.
 func _fade_out_layout() -> void:
-	if not fade_layout:
+	if not fade_layout or _layout_only and animation_leave == Anim.FADE:
 		_tween.tween_interval(duration)
 		return
 
@@ -680,13 +777,16 @@ func _get_nodes_from_containers() -> Array[Control]:
 		if node:
 			_controls.push_back(node)
 
-	var nodes := _controls if _controls.size() else _group.get_children()
+	var nodes: Array = _controls if _controls.size() \
+		else _group.get_children() if _group \
+		else [_layout]
+	_layout_only = _layout and not _controls.size() and not _group
 	var filtered_nodes: Array[Control] = []
 
 	for n in nodes:
 		var node: Node = n
 
-		if node and node.is_class("Control") and not node.get_class() == "Control":
+		if node and node.is_class("Control") and (not node.get_class() == "Control" or _layout_only):
 			filtered_nodes.push_back(node)
 
 	return filtered_nodes
@@ -728,7 +828,8 @@ func _get_node_infos() -> void:
 			animation_enter,
 			animation_leave,
 			auto_start,
-			center_pivot
+			center_pivot,
+			_layout_only
 		))
 
 

@@ -23,8 +23,13 @@ and reloading your project, you can instance the node `GuiTransition` in your sc
 See the properties in the next section to learn how to configure it properly, but pay attention to the required properties:
 
 - `Layout`: The main layout node. It will be hidden and shown accordingly. Should be the topmost node of the current GUI layout, usually the scene root. If you don't set the `Layout ID` property, this node's name will be assumed as the layout ID. **Always required!**
-- `Controls`: An array of nodes that will be animated in sequence. **Required if `Group` is not set!**
-- `Group`: A node with children controls to be animated in sequence. **Required if `Controls` is not set!**
+- `Controls`: An array of nodes that will be animated in sequence.
+- `Group`: A node with children controls to be animated in sequence.
+
+**Notes:**
+- If you don't set both `Controls` and `Group`, the `Layout` itself will be animated.
+In this case, the `Delay` property will not be used.
+- If you set both `Controls` and `Group`, only `Controls` will be animated and `Group` will be ignored.
 
 ### Triggering Transitions
 After setting up its properties, the layout should at least be shown with a transition at startup.
@@ -91,6 +96,21 @@ increasing the player's strength multiple times.
 Simple GUI Transitions is exactly that: simple to set up and use.
 Check the detailed documentation below to learn more.
 
+### Known Limitations
+- No support for changing properties at runtime. This means that you can't
+add controls to `Controls` and `Group` at runtime, and changing other properties
+will have unknown side effects.
+Maybe the support for this will be added in the future,
+but this plugin was designed for static menus and interfaces, after all.
+- No support for slide animations on containers.
+The slide animations will work on visible controls
+(such as buttons and other interactable nodes)
+and the layout (if it is using anchors).
+This is due to the fact that the slide transition on controls work through a shader,
+and it can't animate the children of a container.
+The layout transition, in the other hand, works through anchor tweening,
+so make sure the layout is using anchors to be sized on the screen.
+
 ## Global Settings
 The default transition settings can be set on `Project > Project Settings > GUI Transitions > Config` (you may need to enable `Advanced Settings` to see this section).
 Those settings will be applied on top of any `Default` property on the node `GuiTransition`. This is useful to increase or decrease the speed of transitions on the whole project, for example. See each property description below.
@@ -138,18 +158,16 @@ Optional ID of layout to trigger changes on the singleton `GuiTransitions` (at m
 If empty, will be assumed as the `Layout` node name.
 
 #### Layout
-The main layout node. It will be hidden and shown accordingly. Should be the topmost node of the current layout. **Required!**
+**Required!** The main layout node. It will be hidden and shown accordingly. Should be the topmost node of the current layout. If your don't set `Controls` or `Group`, the `Layout` itself will be animated.
 
 #### Controls
 Array of individual nodes to be animated.
 The order will be taken in account to apply the animation `Delay`.
-**If empty, a `Group` must be set.**
 
 #### Group
 A node with children controls to be animated in sequence.
 The order will be taken in account to apply the animation `Delay`.
 Example: a `HBoxContainer` or `VBoxContainer` with several buttons as children will allow to animate all buttons one by one.
-**If not set, `Controls` must be selected.**
 
 #### Center Pivot
 When `Animation Enter` or `Animation Leave` is one of the scale animations, it will center the control's `pivot_offset` property.
