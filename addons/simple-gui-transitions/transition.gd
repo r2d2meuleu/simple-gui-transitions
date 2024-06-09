@@ -255,6 +255,8 @@ const DEBUG := false
 
 ## The main layout node. It will be hidden and shown accordingly.
 ## Should be the topmost node of the current layout.
+## If your don't set [code]Controls[/code] or [code]Group[/code],
+## the [code]Layout[/code] itself will be animated.
 ## [b][color=red]Required![/color][/b]
 @export var layout: NodePath
 
