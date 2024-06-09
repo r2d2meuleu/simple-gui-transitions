@@ -740,7 +740,7 @@ func _scale_out(node_info: NodeInfo):
 
 ## Gradually fade in the whole layout along with individual transitions.
 func _fade_in_layout() -> void:
-	if not fade_layout or _layout_only:
+	if not fade_layout or _layout_only and animation_enter == Anim.FADE:
 		_tween.tween_interval(duration)
 		return
 
@@ -749,7 +749,7 @@ func _fade_in_layout() -> void:
 
 ## Gradually fade out the whole layout along with individual transitions.
 func _fade_out_layout() -> void:
-	if not fade_layout or _layout_only:
+	if not fade_layout or _layout_only and animation_leave == Anim.FADE:
 		_tween.tween_interval(duration)
 		return
 
