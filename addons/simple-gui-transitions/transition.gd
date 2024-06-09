@@ -52,8 +52,8 @@ class NodeInfo extends RefCounted:
 	var initial_position: Vector2
 	var initial_scale: Vector2
 	var initial_mouse_filter: int
-	var initial_anchor_x: Vector2
-	var initial_anchor_y: Vector2
+	var initial_anchor_h: Vector2
+	var initial_anchor_v: Vector2
 	var delay: float
 	var duration: float
 	var center_pivot: bool
@@ -80,8 +80,8 @@ class NodeInfo extends RefCounted:
 		center_pivot = _center_pivot
 		layout_only = _layout_only
 
-		initial_anchor_x = Vector2(node.anchor_left, node.anchor_right)
-		initial_anchor_y = Vector2(node.anchor_top, node.anchor_bottom)
+		initial_anchor_h = Vector2(node.anchor_left, node.anchor_right)
+		initial_anchor_v = Vector2(node.anchor_top, node.anchor_bottom)
 
 		var shader_animations := [
 			Anim.SLIDE_LEFT,
@@ -142,19 +142,32 @@ class NodeInfo extends RefCounted:
 
 		return offset
 
+	# Reset node scale to initial values.
+	func reset_scale() -> void:
+		node.scale = initial_scale
+
+	# Reset node anchors to initial values.
+	func reset_anchors(direction: String) -> void:
+		if direction in ["both", "h"]:
+			node.anchor_left = initial_anchor_h.x
+			node.anchor_right = initial_anchor_h.y
+		if direction in ["both", "v"]:
+			node.anchor_top = initial_anchor_v.x
+			node.anchor_bottom = initial_anchor_v.y
+
 	# Get the out-of-screen anchor factor of node according to the animation type.
 	func get_target_anchor(animation: int) -> Vector2:
 		var offset := Vector2.ZERO
 
 		match animation:
 			Anim.SLIDE_LEFT:
-				offset = Vector2(-1.0, 0.0)
+				offset = Vector2(initial_anchor_h.x - 1.0, initial_anchor_h.y - 1.0)
 			Anim.SLIDE_RIGHT:
-				offset = Vector2(1.0, 2.0)
+				offset = Vector2(initial_anchor_h.x + 1.0, initial_anchor_h.y + 1.0)
 			Anim.SLIDE_UP:
-				offset = Vector2(-1.0, 0.0)
+				offset = Vector2(initial_anchor_v.x - 1.0, initial_anchor_v.y - 1.0)
 			Anim.SLIDE_DOWN:
-				offset = Vector2(1.0, 2.0)
+				offset = Vector2(initial_anchor_v.x + 1.0, initial_anchor_v.y + 1.0)
 
 		return offset
 
@@ -541,6 +554,7 @@ func _transition_valid() -> bool:
 ## Performs the slide in transition.
 func _slide_in(node_info: NodeInfo):
 	node_info.init_tween()
+	node_info.reset_scale()
 	_fade_in_node(node_info)
 
 	if node_info.delay:
@@ -552,6 +566,7 @@ func _slide_in(node_info: NodeInfo):
 		var target_anchor := node_info.get_target_anchor(animation_enter)
 		node_info.node.set(anchor_x, target_anchor.x)
 		node_info.node.set(anchor_y, target_anchor.y)
+		node_info.reset_anchors("v" if animation_enter in [Anim.SLIDE_LEFT, Anim.SLIDE_RIGHT] else "h")
 
 		node_info.tween\
 			.set_trans(_transition)\
@@ -589,6 +604,7 @@ func _slide_in(node_info: NodeInfo):
 ## Performs the slide out transition.
 func _slide_out(node_info: NodeInfo):
 	node_info.init_tween()
+	node_info.reset_scale()
 	node_info.node.custom_minimum_size = Vector2(1, 1)
 	node_info.node.custom_minimum_size = Vector2.ZERO
 
@@ -599,8 +615,7 @@ func _slide_out(node_info: NodeInfo):
 		var anchor_x := "anchor_left" if animation_leave in [Anim.SLIDE_LEFT, Anim.SLIDE_RIGHT] else "anchor_top"
 		var anchor_y := "anchor_right" if animation_leave in [Anim.SLIDE_LEFT, Anim.SLIDE_RIGHT] else "anchor_bottom"
 		var target_anchor := node_info.get_target_anchor(animation_leave)
-		node_info.node.set(anchor_x, 0.0)
-		node_info.node.set(anchor_y, 1.0)
+		node_info.reset_anchors("both")
 
 		node_info.tween\
 			.set_trans(_transition)\
@@ -639,6 +654,8 @@ func _slide_out(node_info: NodeInfo):
 func _fade_in(node_info: NodeInfo):
 	node_info.init_tween()
 	node_info.set_position(Vector2.ZERO)
+	node_info.reset_anchors("both")
+	node_info.reset_scale()
 	node_info.node.modulate.a = 0.0
 
 	if node_info.delay:
@@ -657,6 +674,8 @@ func _fade_in(node_info: NodeInfo):
 ## Performs the fade out transition.
 func _fade_out(node_info: NodeInfo):
 	node_info.init_tween()
+	node_info.reset_anchors("both")
+	node_info.reset_scale()
 
 	if node_info.delay:
 		node_info.tween.tween_interval(node_info.delay)
@@ -673,6 +692,7 @@ func _fade_out(node_info: NodeInfo):
 func _scale_in(node_info: NodeInfo):
 	node_info.init_tween()
 	node_info.set_position(Vector2.ZERO)
+	node_info.reset_anchors("both")
 
 	node_info.node.modulate.a = 0.0
 	_fade_in_node(node_info)
@@ -697,6 +717,8 @@ func _scale_in(node_info: NodeInfo):
 ## Performs the scale out transition.
 func _scale_out(node_info: NodeInfo):
 	node_info.init_tween()
+	node_info.reset_anchors("both")
+	node_info.reset_scale()
 
 	node_info.tween.tween_callback(node_info.set_pivot_to_center)
 	node_info.tween.tween_callback(node_info.node.set.bind("scale", node_info.initial_scale))
