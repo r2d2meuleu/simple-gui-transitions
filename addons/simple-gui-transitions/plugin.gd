@@ -2,20 +2,22 @@
 extends EditorPlugin
 
 
-# Preloads
-const DefaultValues := preload("res://addons/simple-gui-transitions/default_values.gd")
-
-
 # Constants
 const DEBUG := false
+const BASE_PATH := "res://addons/simple-gui-transitions/"
 const SINGLETON_NAME := "GuiTransitions"
-const SINGLETON_PATH := "res://addons/simple-gui-transitions/singleton.gd"
+
+
+# Preloads
+const DefaultValues := preload(BASE_PATH + "default_values.gd")
+const TransitionNode := preload(BASE_PATH + "transition.gd")
+const TransitionIcon = preload(BASE_PATH + "icon.png")
 
 
 # Built-in overrides
 # Add the addon singleton and default settings to project settings.
 func _enable_plugin() -> void:
-	add_autoload_singleton(SINGLETON_NAME, SINGLETON_PATH)
+	add_autoload_singleton(SINGLETON_NAME, BASE_PATH + "singleton.gd")
 	_add_default_settings()
 
 
@@ -28,11 +30,13 @@ func _disable_plugin() -> void:
 # Automatically non-existing settings to project settings.
 func _enter_tree() -> void:
 	var replace_existing := DEBUG
+	add_custom_type("GuiTransition", "Node", TransitionNode, TransitionIcon)
 	_add_default_settings(replace_existing)
 
 
 # For debug only.
 func _exit_tree() -> void:
+	remove_custom_type("GuiTransition")
 	if DEBUG:
 		_remove_default_settings()
 
