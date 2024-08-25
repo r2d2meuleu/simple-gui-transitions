@@ -11,6 +11,21 @@ See the example scene on `addons/simple-gui-transitions/example` to see this plu
 
 [Download it on Godot Asset Library](https://godotengine.org/asset-library/asset/2134)
 
+## Index
+- [Index](#index)
+- [Installation](#installation)
+- [Basic Usage](#basic-usage)
+    - [Node Configuration](#node-configuration)
+    - [Triggering Transitions](#triggering-transitions)
+    - [Known Limitations](#known-limitations)
+- [Global Settings](#global-settings)
+- [Node `GuiTransition`](#node-guitransition)
+    - [Properties](#properties)
+- [Singleton `GuiTransitions`](#singleton-guitransitions)
+    - [Signals](#signals)
+    - [Public Methods](#public-methods)
+
+
 ## Installation
 - Install the plugin through the [AssetLib](https://godotengine.org/asset-library/asset/2134) **or** copy the plugin `addons` folder to your project's directory
 - Enable the plugin on `Project > Project Settings > Plugins`
