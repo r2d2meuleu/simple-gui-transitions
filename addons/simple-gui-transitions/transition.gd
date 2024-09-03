@@ -556,6 +556,7 @@ func _transition_valid() -> bool:
 func _slide_in(node_info: NodeInfo):
 	node_info.init_tween()
 	node_info.reset_scale()
+	node_info.node.modulate.a = 0.0
 	_fade_in_node(node_info)
 
 	if node_info.delay:
